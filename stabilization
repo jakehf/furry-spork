@@ -1,0 +1,30 @@
+#include <stdio.h>
+#include <math.h>
+
+
+float delta(float original, float current)
+//This function takes in our original position and the current position as arguments and calculates the displacement
+//This will be used to allow us to determine whether or not the roll is great enough to be corrected
+//It will also be used in our function that determines how much the fins need to be deflected
+{
+    float a = original;
+    float b = current;
+    float dt = a-b;
+    return dt;
+}
+
+*/void reset(int time, float original) //This function will be used after stabilization to return the fins to their original 
+//orientation. Still need to know the servo code to adjust the fins before implementing
+{
+    int dt = time
+    int ct =
+    if
+    //insert servo motor code.
+}/*
+
+int main()
+{
+float z = delta(4.5,3.0);
+printf("%f", z);
+return 0;
+}
