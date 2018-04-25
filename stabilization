@@ -24,7 +24,28 @@ float delta(float original, float current)
 
 int main()
 {
-float z = delta(4.5,3.0);
-printf("%f", z);
+**// function that calibrates sensor on launch pad and provides us with the original coordinates.
+**// this will probably need to be a void that returns an x,y,z,theta component that we can store into an array and reference
+
+//We need some form of for loop that will check our vertical acceleration constantly to see if the rocket has left the launch
+//pad before we start running our code below. **I was thinking that an if statement might work** Syntax is not there but 
+//I am including the pseudo code
+
+a = get.vectory();
+if(a <= 0)
+    { get.vectory() }
+else
+    {
+    //Still unsure how to get the time into our code but something like what is listed below should be an accurate way to
+    //run the code after we have that syntax figured out
+    t = get.time() //As stated above, syntax for the time function is not correct
+    while(get.time() < t + 4.6) //This while loop will run until our time has exceed 4.6 seconds over what it was after our 
+                                //vertical acceleration was greater than 0. Our motors burn time is 1.6s and we arent supposed
+                                //to implement th roll control until 3 seconds after burnout so we can hardcode the 4.6s in.
+        {
+        get.time()
+        }
+    
+    }
 return 0;
 }
