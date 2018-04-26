@@ -1,0 +1,101 @@
+#include <Wire.h>
+#include "Adafruit_Sensor.h"
+#include "Adafruit_BNO055.h"
+#include "utility/imumaths.h"
+#include "Servo.h"
+
+Adafruit_BNO055 bno = Adafruit_BNO055(55);
+sensors_event_t event;
+Servo MyServo; // First Motor
+Servo MyServo2; // Second Motor 
+int LeftLED = 13; // First LED
+int RightLED = 12; // Second LED
+
+void setup(void) 
+{  
+
+  MyServo.attach(9);// Attach Motor
+  MyServo2.attach(6);
+  Serial.begin(9600);
+  Serial.println("Orientation Sensor Test"); Serial.println("");
+  pinMode(LeftLED, OUTPUT);
+  /* Initialise the sensor */
+  if(!bno.begin())
+  {
+    /* There was a problem detecting the BNO055 ... check your connections */
+    Serial.print("Ooops, no BNO055 detected ... Check your wiring or I2C ADDR!");
+    while(1);
+  }
+  
+  delay(1000);
+    
+  bno.setExtCrystalUse(true);
+
+}
+ 
+void loop(void) 
+{
+    /* Get a new sensor event */ 
+ 
+  bno.getEvent(&event); // Getting x y and z positions.
+  double positions[4] = {180, 90, 270, 0}; // Positions needed to go to
+  double times[4] = {1.0, 0.75, 0.50, 0.25}; // Durations needed 1 second cycles through all 4 positions then 0.75 second .... etc.
+  for(int i = 0; i < 3; i++) // cycle through positions
+    {
+        rotate(positions[i]); //Using the function for each position
+        MyServo.write(90); // Once rotate executes and finishes reset motor
+        MyServo2.write(90);
+        delay(1000); 
+        digitalWrite(LeftLED,LOW); // Turn roation LED OFF when motor is at origin
+        digitalWrite(RightLED,LOW);     
+    }
+}
+
+void rotate(int p) { //Roation Function
+
+    bno.getEvent(&event); // // Getting x y and z positions.
+    int x = event.orientation.x; // Position in x direction
+    int left = p - 15; // Left and Right are the area that once we reach we can stop executing this function
+    int right = p + 15;
+    int cw = 60; // Motor rotate 30 degrees to go clock wise
+    int ccw = 120; // Motor rotate 30 degrees to go counter clock wise
+    while (x < left || x > right) // while the position is outside of those ranges keep turning it.
+    {
+       bno.getEvent(&event);
+       x = event.orientation.x;
+         Serial.print("X: ");
+         Serial.print(event.orientation.x, 4);
+         Serial.print("\n");
+         delay(100);
+        switch (p) {// case structure for each position
+            case 180:
+                // clockwise and LED
+                digitalWrite(LeftLED,HIGH); // Turn on clock wise LED
+                digitalWrite(RightLED,LOW); // Turn off counter clock wise LED
+                MyServo.write(cw); // Turn motor to rotate the rocket clock wise
+                MyServo2.write(cw);
+                break;
+            case 90:
+                // counterclockwise and 
+                digitalWrite(LeftLED,LOW);
+                digitalWrite(RightLED,HIGH);
+                MyServo.write(ccw);
+                MyServo2.write(ccw);
+                break;
+            case 270:
+                // counterclockwise and LED
+                digitalWrite(LeftLED,LOW);
+                digitalWrite(RightLED,HIGH);
+                MyServo.write(ccw);
+                MyServo2.write(ccw);
+                break;
+            case 0:
+                // clockwise and LED
+                digitalWrite(LeftLED,HIGH);
+                digitalWrite(RightLED,LOW);
+                MyServo.write(cw);
+                MyServo2.write(cw);
+                break;
+        }
+    }
+}// end rotate()
