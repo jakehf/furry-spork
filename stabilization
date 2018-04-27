@@ -8,10 +8,11 @@
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
 sensors_event_t event;
-Servo MyServo;  
-Servo MyServo2; 
-int LeftLED = 13;
-int RightLED = 12;
+Servo MyServo;  //First Motor
+Servo MyServo2; //Second Motor
+int LeftLED = 13; //First LED
+int RightLED = 12; //Second LED
+int MiddleLED = 11; //Middle LED
 
 void setup(void) 
 {  
@@ -34,8 +35,8 @@ void setup(void)
   bno.setExtCrystalUse(true);
 
 
-float x1, x2;
-float delta (x1,x2)
+
+float delta (float x1, float x2) //Fairly simple function, takes in 2 positions and calculates the difference
 { 
   float a = x1;
   float b = x2;
@@ -43,51 +44,53 @@ float delta (x1,x2)
   return delt;
 }
 
-void reset(void)
+void reset() //This function tells our servos to return the flaps back to their original position.
 {
   MyServo.write(90);
   MyServo2.write(90);
 }
 
-void douknowzeway(float z)
+void douknowzeway(float z) //This function will be used to tell our servos which direction to turn
+                            //based on the direction of our thetavector
   {
-    float l;
-    l = z;
-    if(l >= 0)
+    float l; //sets up a float which will represent the theta vector
+    l = z;  //Sets l to the theta vector which was the argument for our function
+    if(l >= 0) // If the theta vector is a positive value turn the servos to 105 degrees. (Need to determine if this should be
+                //105 degrees or 75 degrees depending on which way the flaps should turn.
       {
         MyServo.write(105);
         MyServo2.write(105);
       }
-    else
+    else //If the theta vector, l, is a negative value turn the flaps 15 degrees in the opposite direction
     {
       MyServo.write(75);
       MyServo2.write(75);
     }
-    reset();
+    reset(); //After turning the flaps immediately resets the flaps to their original orientation
   }
 
-void whereweat(float *airay[],time)
+void whereweat(float *airay[], time) //takes in a pointer to an array which has the positions we are hoping to hold
 {
-    /* Get a new sensor event */ 
-  sensors_event_t event; 
-  bno.getEvent(&event);
-  int x = event.orientation.x;
+  /* Get a new sensor event */ 
+  bno.getEvent(&event); //Gets x,y, an z positions
+  int x = event.orientation.x; //sets x = position in x
   
   time_t t0 = now(); //Taken from time library. https://github.com/PaulStoffregen/Time
-  float theta, dtheta, t;
-  t = now()-t0
+  float theta, dtheta, t; //declares these variables as floats
+  time_t t = now()-t0 //Sets the variable t as 
     do{
-      theta = event.orientation.x;
-      dtheta = pow(delta(airay, theta),2)
-      if(dtheta > 15)
+      theta = event.orientation.x; //sets theta to our current position
+      dtheta = pow(delta(airay, theta),2) //sets dtheta to the difference between the position we want to be at, and our current x,
+                                          //then squares the value so its always positive
+      if(dtheta > 225)
         {
-          float thetavector = event.vector.x;
-          douknowzeway(thetavector); //Feeds the current theta vector to our function.
-          //Which then turns the servos in the proper direction
-          
+          float thetavector = event.vector.x; //gets the angular vector to use in our douknowzeway function
+          douknowzeway(thetavector); //Feeds the current theta vector to our function. 
+          //Which then turns the servos in the appropriate direction
         }
+        t = now() - t0 //Sets our time = current time - time when function was called
     }while(t <= time)
-    break;   
+    break;   //After t > time for stabilization breaks.
 }
 
  
