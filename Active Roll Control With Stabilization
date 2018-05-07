@@ -47,16 +47,18 @@ void loop(void)
   Serial.print("start");
   int y = 1;
   while (y==1)
-  { //This while loop was taken from Roman and Begads code and it loops until the accelerometer detects that the accerlation is greater than the acceleration
+  { //**This while loop was taken from Roman and Begads code and it loops until the accelerometer detects that the accerlation is greater than the acceleration
   //due to gravity meaning that the rocket has left the launch pad
     int z = ACCELEROMETER.z()-9;
     Serial.print(" Z: ");
     Serial.print(z);
     Serial.println("");
-      if (z >0){
+      if (z >0)
+      {
         y = 0; //If z > acceleration due to gravity(~-9) sets y=0 and the while loop ends.
-      } //End of Begad and Roman's code
+      }
   }
+    delay(3000);//**End of Begad and Roman's code this tells the arduino to wait 3 seconds 
     int i,j;
     float positions[4] = {180, 90, 270, 0}; // Positions needed to go to *will be used during the active roll control
     float times[4] = {1.0, 0.75, 0.50, 0.25}; // Durations needed 1 second cycles through all 4 positions then 0.75 second .... *same as above
