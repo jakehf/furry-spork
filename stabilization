@@ -1,13 +1,12 @@
 //Jacob Hanson-Flores
 
 #include <Wire.h>
-#include <Adafruit_Sensor.h>
-#include <Adafruit_BNO055.h>
-#include <utility/imumaths.h>
-#include <Servo.h>
+#include "Adafruit_Sensor.h"
+#include "Adafruit_BNO055.h"
+#include "utility/imumaths.h"
+#include "Servo.h"
 #include <Time.h>
 #include <TimeLib.h>
-
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
 sensors_event_t event;
@@ -39,7 +38,7 @@ void setup(void)
 }
 
 
-float delta (float *x1, float *x2) //Fairly simple function, takes in 2 positions and calculates the difference
+float delta (float x1, float x2) //Fairly simple function, takes in 2 positions and calculates the difference
 { 
   printf("made it");
   float a = x1;
@@ -73,14 +72,15 @@ void douknowzeway(float z) //This function will be used to tell our servos which
     reset(); //After turning the flaps immediately resets the flaps to their original orientation
   }
 
-void whereweat(float *airay[], float *times[]) //takes in a pointer to an array which has the positions we are hoping to hold
+void whereweat(float airay, float airaze) //takes in a pointer to an array which has the positions we are hoping to hold
 {
   /* Get a new sensor event */ 
   bno.getEvent(&event); //Gets x,y, an z positions
   int x = event.orientation.x; //sets x = position in x
-  time_t t0 = now(); //Taken from time library. https://github.com/PaulStoffregen/Time
+  
   float theta, dtheta; //declares these variables as floats
-  time_t t = now()-t0; //Sets the variable t as
+  time_t t0 = now(); //Taken from time library. https://github.com/PaulStoffregen/Time
+  time_t t = now()-t0; //Sets the variable t as differnce in time
     do{
       theta = event.orientation.x; //sets theta to our current position
       dtheta = pow(delta(airay, theta),2); //sets dtheta to the difference between the position we want to be at, and our current x,
@@ -91,9 +91,9 @@ void whereweat(float *airay[], float *times[]) //takes in a pointer to an array 
           douknowzeway(thetavector); //Feeds the current theta vector to our function. 
           //Which then turns the servos in the appropriate direction
         }
-        t = now() - t0; //Sets our time = current time - time when function was called
-    }while(t <= times);
-    break; //After t > time for stabilization breaks.
+        t = now() - t0 //Sets our time = current time - time when function was called
+    }while(t <= time);
+    break;   //After t > time for stabilization breaks.
 }
 
  
@@ -106,7 +106,7 @@ void loop(void)
   //size = Insert the number of commands that are located in array where we are reading in positions
   for(j=0; j<4; j++)
   {
-    for(i=0; i<5; i++)
+    for(i=0; i<4; i++)
       {
         whereweat(positions[i], times[j]); //Runs the stabilization for the position located at array[i]
         //rollcontrol(array[i++]); //Runs the roll control to the next location in array
