@@ -9,7 +9,7 @@
 #include <TimeLib.h>
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
-sensors_event_t event;
+//sensors_event_t event;
 Servo MyServo;  //First Motor
 Servo MyServo2; //Second Motor
 int LeftLED = 13; //First LED
@@ -75,6 +75,8 @@ void douknowzeway(float z) //This function will be used to tell our servos which
 void whereweat(float airay, float airaze) //takes in a pointer to an array which has the positions we are hoping to hold
 {
   /* Get a new sensor event */ 
+  sensors_event_t event;
+  sensors_event_t orientation;
   bno.getEvent(&event); //Gets x,y, an z positions
   int x = event.orientation.x; //sets x = position in x
   
@@ -83,15 +85,15 @@ void whereweat(float airay, float airaze) //takes in a pointer to an array which
   time_t t = now()-t0; //Sets the variable t as differnce in time
     do{
       theta = event.orientation.x; //sets theta to our current position
-      dtheta = pow(delta(airay, theta),2); //sets dtheta to the difference between the position we want to be at, and our current x,
+      dtheta = pow((airay-theta),2); //sets dtheta to the difference between the position we want to be at, and our current x,
                                           //then squares the value so its always positive
       if(dtheta > 225)
         {
-          float thetavector = event.vector.x; //gets the angular vector to use in our douknowzeway function
+          float thetavector = event.orientation.x; //gets the angular vector to use in our douknowzeway function
           douknowzeway(thetavector); //Feeds the current theta vector to our function. 
           //Which then turns the servos in the appropriate direction
         }
-        t = now() - t0 //Sets our time = current time - time when function was called
+        t = now() - t0; //Sets our time = current time - time when function was called
     }while(t <= time);
     break;   //After t > time for stabilization breaks.
 }
