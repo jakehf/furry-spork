@@ -1,4 +1,8 @@
 //Jacob Hanson-Flores
+// Roman Alvarado and Begad Elmelligy
+// for the issue with 360 and 0 position, just add (145 < x < 160 || 0 > x > 15) wherever that particular issue is
+// I did not do this myself because I didn't want to screw up your code
+// also added multiple <imu> because they are necessary to get new data from sensor
 
 #include <Wire.h>
 #include "Adafruit_Sensor.h"
@@ -9,15 +13,15 @@
 #include <TimeLib.h>
 
 Adafruit_BNO055 bno = Adafruit_BNO055(55);
-imu::Vector<3> GYROSCOPE  = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
-imu::Vector<3> ACCELEROMETER  = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
 sensors_event_t event;
 Servo MyServo;  //First Motor
 Servo MyServo2; //Second Motor
-int LeftLED = 13; //First LED
-int RightLED = 12; //Second LED
-//int MiddleLED = 11; //Middle LED
-
+int LeftLED = 13; // LED to indicate left rotation
+int RightLED = 12; // LED to indicate right rotation
+int MidLED = 11;  // LED to indicate stabilization code activation
+int flightnum = 4800;  // change this depending on what flight we are launching! flight1=(1800+3000)ms=4800ms and flight2=(1800+2000)ms=3800ms
+int LEDinitial = 200;
+int LEDend = 500;
 void setup(void) //This void setup was taken from Begad and Romans Code. It simply tells the arduino where the servo motors are attached and prints out a statement if the
 //orientation sensor is not detected.
 {  
@@ -27,6 +31,8 @@ void setup(void) //This void setup was taken from Begad and Romans Code. It simp
   Serial.begin(9600);
   Serial.println("Orientation Sensor Test"); Serial.println("");
   pinMode(LeftLED, OUTPUT);
+  pinMode(RightLED, OUTPUT);
+  pinMode(MidLED, OUTPUT);
   /* Initialise the sensor */
   if(!bno.begin())
   {
@@ -37,19 +43,21 @@ void setup(void) //This void setup was taken from Begad and Romans Code. It simp
   
   delay(1000);
   bno.setExtCrystalUse(true);
-delay(100);
+  delay(100);
 }
 
 
 void loop(void) 
 {
+  bno.getEvent(&event);
   float start = event.orientation.x;
   Serial.print("start");
   int y = 1;
-  while (y==1)
-  { //**This while loop was taken from Roman and Begads code and it loops until the accelerometer detects that the accerlation is greater than the acceleration
+  while (y==1){ //**This while loop was taken from Roman and Begads code and it loops until the accelerometer detects that the accerlation is greater than the acceleration
   //due to gravity meaning that the rocket has left the launch pad
+    imu::Vector<3> ACCELEROMETER  = bno.getVector(Adafruit_BNO055::VECTOR_ACCELEROMETER);
     int z = ACCELEROMETER.z()-9;
+    LEDstandby(LEDinitial);
     Serial.print(" Z: ");
     Serial.print(z);
     Serial.println("");
@@ -58,7 +66,10 @@ void loop(void)
         y = 0; //If z > acceleration due to gravity(~-9) sets y=0 and the while loop ends.
       }
   }
-    delay(3000);//**End of Begad and Roman's code this tells the arduino to wait 3 seconds 
+    digitalWrite(LeftLED, HIGH);
+    digitalWrite(RightLED, HIGH);
+    digitalWrite(MidLED, HIGH);
+    delay(flightnum);//**End of Begad and Roman's code this tells the arduino to wait 3 seconds 
     int i,j;
     float positions[4] = {180, 90, 270, 0}; // Positions needed to go to *will be used during the active roll control
     float times[4] = {1.0, 0.75, 0.50, 0.25}; // Durations needed 1 second cycles through all 4 positions then 0.75 second .... *same as above
@@ -68,6 +79,7 @@ void loop(void)
       //positions again for times[j+1] seconds
     for(i=0; i<4; i++)
       {
+        bno.getEvent(&event);
         rotate(positions[i]); //Runs the roll control to the location indicated in the array
         whereweat(positions[i], times[j]); //Runs the stabilization for the position located at positions[i] for times[j] seconds
         height = event.orientation.y; //Sets the height to current height
@@ -77,13 +89,26 @@ void loop(void)
             break; //Code stops
           }
       }
-    } 
+    }
+    while (y==0);
+      LEDstandby(LEDend);
   }
 
   void reset() //This function tells our servos to return the flaps back to their original position.
 {
   MyServo.write(90);
   MyServo2.write(90);
+}
+
+void LEDstandby(int duration){
+  digitalWrite(LeftLED, HIGH);
+  digitalWrite(RightLED, HIGH);
+  digitalWrite(MidLED, HIGH);
+  delay(duration);
+  digitalWrite(LeftLED, LOW);
+  digitalWrite(RightLED, LOW);
+  digitalWrite(MidLED, LOW);
+  delay(duration);
 }
 
 void douknowzeway(float z) //This function will be used to tell our servos which direction to turn
@@ -107,13 +132,17 @@ void douknowzeway(float z) //This function will be used to tell our servos which
 
 void whereweat(float x1, float x2) //takes in a pointer to an array which has the positions we are hoping to hold
 {
+  bno.getEvent(&event);
   /* Get a new sensor event */ 
   float x = event.orientation.x; //sets x = current position in x
   float vert = event.orientation.y;
   float theta, dtheta, dvert, goalz = x1; //declares these variables as floats goalz = the position at argument x1 which is our goal to achieve
   time_t t0 = now(); //Taken from time library. https://github.com/PaulStoffregen/Time
   time_t t = now()-t0; //Sets the variable t as difference in time
+  digitalWrite(MidLED,HIGH);
     do{
+      imu::Vector<3> GYROSCOPE  = bno.getVector(Adafruit_BNO055::VECTOR_GYROSCOPE);
+      bno.getEvent(&event);
       vert = event.orientation.y; //sets vert to the current height
       dvert = event.orientation.y - vert; //sets dvert to current height-the height of vert just taken in
       if(dvert < 0) //if the change in vertical height is <0 the code breaks because we are descending
@@ -130,10 +159,10 @@ void whereweat(float x1, float x2) //takes in a pointer to an array which has th
         }
        t = now() - t0; //Sets our time = current time - time when function was called
     }while(t <= x2);
+    digitalWrite(MidLED,HIGH);
 }
 
 void rotate(int p) { //Rotation Function written by Begad and Roman
-
     bno.getEvent(&event); // // Getting x y and z positions.
     int x = event.orientation.x; // Position in x direction
     int left = p - 15; // Left and Right are the area that once we reach we can stop executing this function
